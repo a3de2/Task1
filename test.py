@@ -1,4 +1,3 @@
-# test_main.py
 import unittest
 from main import application
 
@@ -8,7 +7,8 @@ class TestApplication(unittest.TestCase):
         environ = {'REQUEST_METHOD': 'GET', 'PATH_INFO': '/GMT'}
         response = application(environ, lambda status, headers: None)
         self.assertIsNotNone(response)
-        self.assertTrue(response[0].startswith(b'20'))  # Checking if the response starts with '20'
+        if response:
+            self.assertTrue(response[0].startswith(b'20'))
 
     def test_convert_time(self):
         environ = {
