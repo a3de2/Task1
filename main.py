@@ -25,10 +25,18 @@ def application(environ, start_response):
         # Обработка POST запроса для преобразования времени из одного часового пояса в другой
         content_length = int(environ.get('CONTENT_LENGTH', '0'))
         post_data = json.loads(environ['wsgi.input'].read(content_length))
-        date_str = post_data['date']
-        source_tz = pytz.timezone(post_data['tz'])
-        target_tz = pytz.timezone(post_data['target_tz'])
-        # Логика для преобразования времени
+        date_str = post_data.get('date', '')
+        source_tz_name = post_data.get('tz', '')
+        target_tz_name = post_data.get('target_tz', '')
+
+        if date_str and source_tz_name and target_tz_name:
+            source_tz = pytz.timezone(source_tz_name)
+            target_tz = pytz.timezone(target_tz_name)
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+            localized_date = source_tz.localize(date_obj)
+            converted_date = localized_date.astimezone(target_tz)
+            response_data = {'converted_date': str(converted_date)}
+            return [json.dumps(response_data).encode()]
 
     elif method == 'POST' and path == '/api/v1/datediff':
         # Обработка POST запроса для вычисления разницы во времени между двумя датами
@@ -38,10 +46,14 @@ def application(environ, start_response):
         second_date = datetime.strptime(post_data['second_date'], '%I:%M%p %Y-%m-%d')
         first_tz = pytz.timezone(post_data['first_tz'])
         second_tz = pytz.timezone(post_data['second_tz'])
-        # Логика для вычисления разницы во времени
 
-    else:
-        return [b'Not Found']
+        # Calculate the time difference
+        time_diff = second_date - first_date
+        time_diff = time_diff.total_seconds() // 60  # Get the time difference in minutes
+
+        response_data = {'time_difference_minutes': time_diff}
+
+        return [json.dumps(response_data).encode()]
 
 with make_server('', 8000, application) as httpd:
     print("Serving on port 8000...")
